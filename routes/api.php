@@ -22,10 +22,14 @@ Route::put('/user/update-address', [AddressController::class, 'updateAddress']);
 Route::post('/category/create', [ProductCategoryController::class, 'createCategory']);
 Route::post('/subcategory/create', [ProductCategoryController::class, 'createSubCategory']);
 Route::get('/category/all', [ProductCategoryController::class, 'getAllCategories']);
-
+Route::get('/subcategories', [ProductCategoryController::class, 'getAllSubCategories']);
+Route::get('/subcategories/by-category', [ProductCategoryController::class, 'getSubCategoriesByCategory']);
 
 Route::post('/product/create', [ProductController::class, 'createProduct']);
 Route::get('/product/all', [ProductController::class, 'getAllProducts']);
+Route::get('/products/by-category', [ProductController::class, 'getProductsByCategory']);
+Route::get('/products/by-subcategory', [ProductController::class, 'getProductsBySubCategory']);
+Route::get('/products/filter', [ProductController::class, 'getProductsFiltered']);
 
 Route::post('/cart/add', [CartController::class, 'addToCart']);
 Route::get('/cart/list', [CartController::class, 'getCartItems']);

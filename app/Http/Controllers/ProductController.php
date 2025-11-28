@@ -112,4 +112,74 @@ class ProductController extends Controller
             'data' => $products
         ]);
     }
+
+
+    public function getProductsByCategory(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|string|exists:product_categories,category_id'
+        ]);
+
+        $products = Product::where('category_id', $request->category_id)->get();
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No products found for this category',
+                'data' => []
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Products fetched successfully',
+            'data' => $products
+        ]);
+    }
+
+    public function getProductsBySubCategory(Request $request)
+    {
+        $request->validate([
+            'sub_category_id' => 'required|string|exists:product_subcategories,sub_category_id'
+        ]);
+
+        $products = Product::where('sub_category_id', $request->sub_category_id)->get();
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No products found for this subcategory',
+                'data' => []
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Products fetched successfully',
+            'data' => $products
+        ]);
+    }
+
+    public function getProductsFiltered(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|string|exists:product_categories,category_id',
+            'sub_category_id' => 'nullable|string|exists:product_subcategories,sub_category_id'
+        ]);
+
+        $query = Product::where('category_id', $request->category_id);
+
+        if ($request->sub_category_id) {
+            $query->where('sub_category_id', $request->sub_category_id);
+        }
+
+        $products = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Products fetched successfully',
+            'count' => $products->count(),
+            'data' => $products
+        ]);
+    }
 }

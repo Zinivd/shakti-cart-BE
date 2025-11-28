@@ -87,4 +87,31 @@ class ProductCategoryController extends Controller
             'data' => $response
         ]);
     }
+
+    public function getAllSubCategories()
+    {
+        $subcategories = ProductSubCategory::all(['sub_category_id', 'sub_category_name', 'category_id']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $subcategories
+        ]);
+    }
+
+    public function getSubCategoriesByCategory(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|string|exists:product_categories,category_id'
+        ]);
+
+        $subcategories = ProductSubCategory::where('category_id', $request->category_id)
+            ->get(['sub_category_id', 'sub_category_name', 'category_id']);
+
+        return response()->json([
+            'success' => true,
+            'category_id' => $request->category_id,
+            'count' => $subcategories->count(),
+            'data' => $subcategories
+        ]);
+    }
 }
