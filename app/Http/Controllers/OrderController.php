@@ -6,215 +6,340 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class OrderController extends Controller
 {
+    // ---------------------------------------------------------------------
+    // 🔐 TOKEN VALIDATION (Reusable helper)
+    // ---------------------------------------------------------------------
+    private function getUserFromToken(Request $request)
+    {
+        try {
+            $token = $request->header('Authorization');
+
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authorization token missing'
+                ], 401);
+            }
+
+            $token = str_replace('Bearer ', '', $token);
+
+            $decoded = json_decode(Crypt::decryptString($token), true);
+
+            if (!isset($decoded['unique_id'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token structure'
+                ], 401);
+            }
+
+            return $decoded;
+
+        } catch (Exception $e) {
+            Log::error("Token Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token'
+            ], 401);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // 🛒 PLACE ORDER
+    // ---------------------------------------------------------------------
     public function placeOrder(Request $request)
     {
-        $request->validate([
-            'payment_mode' => 'required|string',
-            'address' => 'required|array',
-            'items' => 'required|array',
-            'items.*.product_id' => 'required|exists:products,product_id',
-            'items.*.quantity' => 'required|integer|min:1'
-        ]);
-
-        // TOKEN → USER
         try {
-            $token = str_replace('Bearer ', '', $request->header('Authorization'));
-            $decoded = json_decode(\Crypt::decryptString($token), true);
+            $request->validate([
+                'payment_mode' => 'required|string',
+                'address' => 'required|array',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|exists:products,product_id',
+                'items.*.quantity' => 'required|integer|min:1'
+            ]);
+
+            // Token → User Info
+            $decoded = $this->getUserFromToken($request);
+            if ($decoded instanceof \Illuminate\Http\JsonResponse)
+                return $decoded;
 
             $userId = $decoded['unique_id'];
-            $userName = $decoded['name'];
-            $userEmail = $decoded['email'];
-            $userPhone = $decoded['phone'];
 
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
-        }
+            // Generate order ID
+            $latest = Order::orderBy('id', 'desc')->first();
+            $orderId = 'ORD' . ($latest ? $latest->id + 1 : 1);
 
-        // NEW ORDER ID
-        $latest = Order::orderBy('id', 'desc')->first();
-        $orderId = 'ORD' . ($latest ? $latest->id + 1 : 1);
+            // Calculate total amount
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $product = Product::where('product_id', $item['product_id'])->first();
+                $totalAmount += $product->selling_price * $item['quantity'];
+            }
 
-        // CALCULATE TOTAL
-        $totalAmount = 0;
-        foreach ($request->items as $item) {
-            $product = Product::where('product_id', $item['product_id'])->first();
-            $totalAmount += $product->selling_price * $item['quantity'];
-        }
-
-        // INSERT ORDER
-        $order = Order::create([
-            'order_id' => $orderId,
-            'user_id' => $userId,
-            'user_name' => $userName,
-            'user_email' => $userEmail,
-            'user_phone' => $userPhone,
-
-            'address_building' => $request->address['building'],
-            'address_line1' => $request->address['address_line1'],
-            'address_line2' => $request->address['address_line2'] ?? null,
-            'city' => $request->address['city'],
-            'district' => $request->address['district'],
-            'state' => $request->address['state'],
-            'pincode' => $request->address['pincode'],
-            'landmark' => $request->address['landmark'] ?? null,
-            'address_type' => $request->address['address_type'],
-
-            'payment_mode' => $request->payment_mode,
-            'payment_status' => 'PENDING',
-            'order_status' => 'PLACED',
-            'total_amount' => $totalAmount
-        ]);
-
-        // INSERT ITEMS
-        foreach ($request->items as $item) {
-            $product = Product::where('product_id', $item['product_id'])->first();
-
-            OrderItem::create([
+            // Create Order
+            $order = Order::create([
                 'order_id' => $orderId,
-                'product_id' => $item['product_id'],
-                'quantity' => $item['quantity'],
-                'price' => $product->selling_price,
-                'total' => $product->selling_price * $item['quantity']
-            ]);
-        }
+                'user_id' => $userId,
+                'user_name' => $decoded['name'],
+                'user_email' => $decoded['email'],
+                'user_phone' => $decoded['phone'],
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Order placed successfully',
-            'order_id' => $orderId,
-            'total_amount' => $totalAmount
-        ]);
+                // Address Info
+                'address_building' => $request->address['building'],
+                'address_line1' => $request->address['address_line1'],
+                'address_line2' => $request->address['address_line2'] ?? null,
+                'city' => $request->address['city'],
+                'district' => $request->address['district'],
+                'state' => $request->address['state'],
+                'pincode' => $request->address['pincode'],
+                'landmark' => $request->address['landmark'] ?? null,
+                'address_type' => $request->address['address_type'],
+
+                'payment_mode' => $request->payment_mode,
+                'payment_status' => 'PENDING',
+                'order_status' => 'PLACED',
+                'total_amount' => $totalAmount
+            ]);
+
+            // Create Order Items
+            foreach ($request->items as $item) {
+                $product = Product::where('product_id', $item['product_id'])->first();
+
+                OrderItem::create([
+                    'order_id' => $orderId,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $product->selling_price,
+                    'total' => $product->selling_price * $item['quantity']
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order placed successfully',
+                'order_id' => $orderId,
+                'total_amount' => $totalAmount
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("PlaceOrder Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to place order'
+            ], 500);
+        }
     }
 
+    // ---------------------------------------------------------------------
+    // 📦 UPDATE ORDER STATUS (Admin typically)
+    // ---------------------------------------------------------------------
     public function updateOrderStatus(Request $request)
     {
-        $request->validate([
-            'order_id' => 'required|exists:orders,order_id',
-            'status' => 'required|string'
-        ]);
+        try {
+            $request->validate([
+                'order_id' => 'required|exists:orders,order_id',
+                'status' => 'required|string'
+            ]);
 
-        $order = Order::where('order_id', $request->order_id)->first();
+            $order = Order::where('order_id', $request->order_id)->first();
 
-        $order->order_status = $request->status;
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found'
+                ], 404);
+            }
 
-        if ($request->status == 'Shipped')
-            $order->shipped_at = now();
-        if ($request->status == 'Delivered')
-            $order->delivered_at = now();
+            $order->order_status = $request->status;
 
-        $order->save();
+            if ($request->status === 'Shipped') {
+                $order->shipped_at = now();
+            }
 
-        return response()->json(['success' => true, 'message' => 'Order status updated']);
+            if ($request->status === 'Delivered') {
+                $order->delivered_at = now();
+            }
+
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated'
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("UpdateOrderStatus Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status'
+            ], 500);
+        }
     }
 
-
+    // ---------------------------------------------------------------------
+    // 📜 USER ORDER LIST (Token-based)
+    // ---------------------------------------------------------------------
     public function orderList(Request $request)
     {
         try {
-            $token = str_replace('Bearer ', '', $request->header('Authorization'));
-            $decoded = json_decode(\Crypt::decryptString($token), true);
-            $userId = $decoded['unique_id'];
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
+            $decoded = $this->getUserFromToken($request);
+            if ($decoded instanceof \Illuminate\Http\JsonResponse)
+                return $decoded;
+
+            $orders = Order::where('user_id', $decoded['unique_id'])
+                ->with('items.product')
+                ->orderBy('id', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("OrderList Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders'
+            ], 500);
         }
-
-        $orders = Order::where('user_id', $userId)
-            ->with('items.product')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
     }
 
-
+    // ---------------------------------------------------------------------
+    // 📜 GET USER ORDERS BY ID (Admin)
+    // ---------------------------------------------------------------------
     public function getUserOrders(Request $request)
     {
-        $user_id = $request->query('user_id');
+        try {
+            $request->validate([
+                'user_id' => 'required|string'
+            ]);
 
-        if (!$user_id) {
+            $orders = Order::where('user_id', $request->user_id)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("GetUserOrders Error: " . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'user_id is required'
-            ]);
+                'message' => 'Unable to fetch orders'
+            ], 500);
         }
-
-        $orders = Order::where('user_id', $user_id)
-
-            ->orderBy('id', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
     }
 
-
+    // ---------------------------------------------------------------------
+    // 📦 GET ORDER BY ORDER ID
+    // ---------------------------------------------------------------------
     public function getOrderByOrderId(Request $request)
     {
-        // Validate Query Param
-        $request->validate([
-            'order_id' => 'required|string'
-        ]);
+        try {
+            $request->validate([
+                'order_id' => 'required|string'
+            ]);
 
-        // Fetch Order
-        $order = Order::where('order_id', $request->order_id)
-            ->first();
+            $order = Order::where('order_id', $request->order_id)->first();
 
-        if (!$order) {
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order details fetched successfully',
+                'data' => $order
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("GetOrderById Error: " . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found'
-            ]);
+                'message' => 'Error fetching order'
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Order details fetched successfully',
-            'data' => $order
-        ]);
     }
 
-
+    // ---------------------------------------------------------------------
+    // 💳 PAYMENT INITIATE
+    // ---------------------------------------------------------------------
     public function initiatePayment(Request $request)
     {
-        $request->validate([
-            'order_id' => 'required|exists:orders,order_id'
-        ]);
+        try {
+            $request->validate([
+                'order_id' => 'required|exists:orders,order_id'
+            ]);
 
-        $order = Order::where('order_id', $request->order_id)->first();
+            return response()->json([
+                "success" => true,
+                "payment_url" => "https://your-payment-gateway/redirect"
+            ]);
 
-        return response()->json([
-            "success" => true,
-            "payment_url" => "https://your-payment-gateway/redirect"
-        ]);
+        } catch (Exception $e) {
+            Log::error("InitiatePayment Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initiation failed'
+            ], 500);
+        }
     }
 
-
+    // ---------------------------------------------------------------------
+    // 💳 PAYMENT CALLBACK
+    // ---------------------------------------------------------------------
     public function paymentCallback(Request $request)
     {
-        $orderId = $request->merchantTransactionId;
-        $paymentId = $request->transactionId;
-        $status = $request->code;
+        try {
+            $orderId = $request->merchantTransactionId;
+            $paymentId = $request->transactionId;
+            $status = $request->code;
 
-        $order = Order::where('order_id', $orderId)->first();
+            $order = Order::where('order_id', $orderId)->first();
 
-        $order->payment_id = $paymentId;
-        $order->payment_status = $status === 'PAYMENT_SUCCESS' ? 'SUCCESS' : 'FAILED';
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found'
+                ], 404);
+            }
 
-        if ($order->payment_status === 'SUCCESS') {
-            $order->order_status = 'CONFIRMED';
+            $order->payment_id = $paymentId;
+            $order->payment_status = $status === 'PAYMENT_SUCCESS' ? 'SUCCESS' : 'FAILED';
+
+            if ($order->payment_status === 'SUCCESS') {
+                $order->order_status = 'CONFIRMED';
+            }
+
+            $order->save();
+
+            return response()->json(['success' => true]);
+
+        } catch (Exception $e) {
+            Log::error("PaymentCallback Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment callback failed'
+            ], 500);
         }
-
-        $order->save();
-
-        return response()->json(['success' => true]);
     }
-
-
 }
