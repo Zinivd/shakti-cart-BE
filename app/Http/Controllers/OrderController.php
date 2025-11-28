@@ -100,9 +100,9 @@ class OrderController extends Controller
 
         $order->order_status = $request->status;
 
-        if ($request->status == 'SHIPPED')
+        if ($request->status == 'Shipped')
             $order->shipped_at = now();
-        if ($request->status == 'DELIVERED')
+        if ($request->status == 'Delivered')
             $order->delivered_at = now();
 
         $order->save();
@@ -128,6 +128,55 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'data' => $orders
+        ]);
+    }
+
+
+    public function getUserOrders(Request $request)
+    {
+        $user_id = $request->query('user_id');
+
+        if (!$user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'user_id is required'
+            ]);
+        }
+
+        $orders = Order::where('user_id', $user_id)
+
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $orders
+        ]);
+    }
+
+
+    public function getOrderByOrderId(Request $request)
+    {
+        // Validate Query Param
+        $request->validate([
+            'order_id' => 'required|string'
+        ]);
+
+        // Fetch Order
+        $order = Order::where('order_id', $request->order_id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order details fetched successfully',
+            'data' => $order
         ]);
     }
 

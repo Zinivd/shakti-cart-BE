@@ -39,5 +39,7 @@ Route::post('/wishlist/remove', [WishlistController::class, 'removeWishlistItem'
 Route::post('/order/place', [OrderController::class, 'placeOrder']);
 Route::post('/order/payment', [OrderController::class, 'initiatePayment']);
 Route::post('/payment/callback', [OrderController::class, 'paymentCallback']);
-Route::post('/order/update-status', [OrderController::class, 'updateOrderStatus']); // admin
+Route::put('/order/update-status', [OrderController::class, 'updateOrderStatus']); // admin
 Route::get('/order/list', [OrderController::class, 'orderList']); // user
+Route::get('/orders', [OrderController::class, 'getUserOrders']);
+Route::get('/orders_byorderId', [OrderController::class, 'getOrderByOrderId']);

@@ -34,4 +34,16 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
     }
+
+    public function address()
+    {
+        return $this->hasOne(OrderAddress::class, 'order_id', 'order_id');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(OrderPayment::class, 'order_id', 'order_id');
+    }
+
+
 }
