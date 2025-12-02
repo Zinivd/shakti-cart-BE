@@ -312,4 +312,94 @@ class ProductCategoryController extends Controller
             ], 500);
         }
     }
+
+
+    public function getAllCategories(Request $request)
+    {
+        if ($user = $this->validateToken($request)) {
+            if ($user instanceof \Illuminate\Http\JsonResponse)
+                return $user;
+        }
+
+        try {
+            $categories = ProductCategory::with('subcategories')->get();
+
+            return response()->json([
+                'success' => true,
+                'count' => $categories->count(),
+                'data' => $categories
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("GetAllCategories Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch categories'
+            ], 500);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 📌 2) GET ALL SUBCATEGORIES
+    // ---------------------------------------------------------
+    public function getAllSubCategories(Request $request)
+    {
+        if ($user = $this->validateToken($request)) {
+            if ($user instanceof \Illuminate\Http\JsonResponse)
+                return $user;
+        }
+
+        try {
+            $subs = ProductSubCategory::all();
+
+            return response()->json([
+                'success' => true,
+                'count' => $subs->count(),
+                'data' => $subs
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("GetAllSubCategories Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch subcategories'
+            ], 500);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 📌 3) GET SUBCATEGORIES BY CATEGORY ID
+    // ---------------------------------------------------------
+    public function getSubCategoriesByCategory(Request $request)
+    {
+        if ($user = $this->validateToken($request)) {
+            if ($user instanceof \Illuminate\Http\JsonResponse)
+                return $user;
+        }
+
+        try {
+            $request->validate([
+                'category_id' => 'required|string|exists:product_categories,category_id'
+            ]);
+
+            $subs = ProductSubCategory::where('category_id', $request->category_id)->get();
+
+            return response()->json([
+                'success' => true,
+                'category_id' => $request->category_id,
+                'count' => $subs->count(),
+                'data' => $subs
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("GetSubCategoriesByCategory Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch subcategories'
+            ], 500);
+        }
+    }
 }
