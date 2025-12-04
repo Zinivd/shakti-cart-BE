@@ -12,6 +12,8 @@ use App\Http\Controllers\OrderController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/customers-list', [userInfoController::class, 'getAllUsers']); 
+Route::get('/customers-list-byId', [userInfoController::class, 'getUserById']);
 
 Route::get('/user/info', [userInfoController::class, 'userInfo']);
 Route::put('/user/update', [userInfoController::class, 'updateUserInfo']);

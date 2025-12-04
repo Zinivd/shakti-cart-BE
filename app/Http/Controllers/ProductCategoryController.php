@@ -217,19 +217,24 @@ class ProductCategoryController extends Controller
         try {
             $request->validate([
                 'category_id' => 'required|exists:product_categories,category_id',
-                'sub_category_name' => 'required|string|max:255'
+                'subcategories' => 'required|array|min:1',
+                'subcategories.*.sub_category_name' => 'required|string|max:255'
             ]);
 
-            $sub = ProductSubCategory::create([
-                'sub_category_id' => $this->generateSubCategoryId(),
-                'sub_category_name' => $request->sub_category_name,
-                'category_id' => $request->category_id
-            ]);
+            $created = [];
+
+            foreach ($request->subcategories as $item) {
+                $created[] = ProductSubCategory::create([
+                    'sub_category_id' => $this->generateSubCategoryId(),
+                    'sub_category_name' => $item['sub_category_name'],
+                    'category_id' => $request->category_id
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Subcategory created successfully',
-                'data' => $sub
+                'message' => 'Subcategories created successfully',
+                'data' => $created
             ]);
 
         } catch (Exception $e) {
@@ -237,11 +242,10 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error creating subcategory'
+                'message' => 'Error creating subcategories'
             ], 500);
         }
     }
-
     // ---------------------------------------------------------
     // UPDATE SUBCATEGORY
     // ---------------------------------------------------------
@@ -254,20 +258,32 @@ class ProductCategoryController extends Controller
 
         try {
             $request->validate([
-                'sub_category_id' => 'required|string|exists:product_subcategories,sub_category_id',
-                'sub_category_name' => 'required|string|max:255'
+                'category_id' => 'required|exists:product_categories,category_id',
+                'subcategories' => 'required|array|min:1',
+                'subcategories.*.sub_category_id' => 'required|exists:product_subcategories,sub_category_id',
+                'subcategories.*.sub_category_name' => 'required|string|max:255',
             ]);
 
-            $sub = ProductSubCategory::where('sub_category_id', $request->sub_category_id)->first();
+            $updated = [];
 
-            $sub->update([
-                'sub_category_name' => $request->sub_category_name
-            ]);
+            foreach ($request->subcategories as $item) {
+                $sub = ProductSubCategory::where('sub_category_id', $item['sub_category_id'])
+                    ->where('category_id', $request->category_id)
+                    ->first();
+
+                if ($sub) {
+                    $sub->update([
+                        'sub_category_name' => $item['sub_category_name']
+                    ]);
+
+                    $updated[] = $sub;
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Subcategory updated successfully',
-                'data' => $sub
+                'message' => 'Subcategories updated successfully',
+                'data' => $updated
             ]);
 
         } catch (Exception $e) {
@@ -275,7 +291,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating subcategory'
+                'message' => 'Error updating subcategories'
             ], 500);
         }
     }

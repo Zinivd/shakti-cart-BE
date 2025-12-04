@@ -11,7 +11,9 @@ use Exception;
 
 class userInfoController extends Controller
 {
-    // 🔐 Validate token and return user
+    // ---------------------------------------------------
+    // 🔐 VALIDATE TOKEN (returns user or JsonResponse)
+    // ---------------------------------------------------
     private function validateToken(Request $request)
     {
         try {
@@ -26,30 +28,36 @@ class userInfoController extends Controller
 
             $token = str_replace('Bearer ', '', $token);
 
-            // decrypt
             $decoded = json_decode(Crypt::decryptString($token), true);
 
             if (!isset($decoded['email'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid token format'
+                    'message' => 'Invalid token structure'
                 ], 401);
             }
 
-            // find user
             $user = AuthUser::where('email', $decoded['email'])->first();
 
-            if (!$user || $user->session_token !== $token) {
+            if (!$user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid or expired token'
+                    'message' => 'Token user not found'
+                ], 404);
+            }
+
+            if ($user->session_token !== $token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Expired or invalid token'
                 ], 401);
             }
 
             return $user;
 
         } catch (Exception $e) {
-            Log::error("Token validation failed: " . $e->getMessage());
+
+            Log::error("Token validation error: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -58,7 +66,9 @@ class userInfoController extends Controller
         }
     }
 
-    // 🔓 GET USER INFO
+    // ---------------------------------------------------
+    // 👤 GET USER INFO (email)
+    // ---------------------------------------------------
     public function userInfo(Request $request)
     {
         try {
@@ -71,22 +81,20 @@ class userInfoController extends Controller
                 ], 400);
             }
 
-            // validate token
             $user = $this->validateToken($request);
-
             if ($user instanceof \Illuminate\Http\JsonResponse)
                 return $user;
 
-            if ($user->email !== $email) {
+            if ($email !== $user->email) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Email mismatch with token user'
+                    'message' => 'Email mismatch with token'
                 ], 403);
             }
 
-            // timestamp formatting
-            $formatTime = fn($value) =>
-                $value ? Carbon::parse($value)->setTimezone('Asia/Kolkata')->toDateTimeString() : null;
+            $format = fn($time) => $time
+                ? Carbon::parse($time)->setTimezone('Asia/Kolkata')->toDateTimeString()
+                : null;
 
             return response()->json([
                 'success' => true,
@@ -97,21 +105,24 @@ class userInfoController extends Controller
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'user_type' => $user->user_type,
-                    'last_login_at' => $formatTime($user->last_login_at),
+                    'last_login_at' => $format($user->last_login_at)
                 ]
             ]);
 
         } catch (Exception $e) {
+
             Log::error("Fetch user info error: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to fetch user information'
+                'message' => 'Unable to fetch user info'
             ], 500);
         }
     }
 
-    // ✏ UPDATE USER INFO (ONLY name is allowed)
+    // ---------------------------------------------------
+    // ✏ UPDATE PROFILE (ONLY name allowed)
+    // ---------------------------------------------------
     public function updateUserInfo(Request $request)
     {
         try {
@@ -123,27 +134,28 @@ class userInfoController extends Controller
                 'name' => 'required|string|max:255'
             ]);
 
-            $user->update([
-                'name' => $request->name
-            ]);
+            $user->update(['name' => $request->name]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'User information updated successfully',
+                'message' => 'User info updated successfully',
                 'data' => $user
             ]);
 
         } catch (Exception $e) {
+
             Log::error("Update user info error: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to update user information'
+                'message' => 'Failed to update user info'
             ], 500);
         }
     }
 
+    // ---------------------------------------------------
     // 🗑 DELETE USER (ADMIN ONLY)
+    // ---------------------------------------------------
     public function deleteUser(Request $request)
     {
         try {
@@ -171,11 +183,10 @@ class userInfoController extends Controller
                 ], 404);
             }
 
-            // Prevent admin deleting themselves
             if ($admin->unique_id === $user->unique_id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Admin cannot delete their own account'
+                    'message' => 'Admin cannot delete themselves'
                 ], 400);
             }
 
@@ -187,11 +198,88 @@ class userInfoController extends Controller
             ]);
 
         } catch (Exception $e) {
+
             Log::error("Delete user error: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to delete user'
+                'message' => 'Failed to delete user'
+            ], 500);
+        }
+    }
+
+    // ---------------------------------------------------
+    // 📌 GET ALL USERS (only customers)
+    // ---------------------------------------------------
+    public function getAllUsers(Request $request)
+    {
+        try {
+            $auth = $this->validateToken($request);
+            if ($auth instanceof \Illuminate\Http\JsonResponse)
+                return $auth;
+
+            $users = AuthUser::where('user_type', 'customer')->get();
+
+            return response()->json([
+                'success' => true,
+                'count' => $users->count(),
+                'data' => $users
+            ]);
+
+        } catch (Exception $e) {
+
+            Log::error("Get all users error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch users'
+            ], 500);
+        }
+    }
+
+    // ---------------------------------------------------
+    // 📌 GET USER BY UNIQUE_ID
+    // ---------------------------------------------------
+    public function getUserById(Request $request)
+    {
+        try {
+            // 🔐 Validate token
+            $auth = $this->validateToken($request);
+            if ($auth instanceof \Illuminate\Http\JsonResponse)
+                return $auth;
+
+            // 🔎 Read from query params
+            $uniqueId = $request->query('unique_id');
+
+            if (!$uniqueId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'unique_id parameter is required'
+                ], 400);
+            }
+
+            // Validate manually (because it's a query param)
+            $user = AuthUser::where('unique_id', $uniqueId)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $user
+            ]);
+
+        } catch (Exception $e) {
+
+            Log::error("Get user by ID error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user'
             ], 500);
         }
     }
