@@ -42,6 +42,7 @@ Route::get('/products/by-subcategory', [ProductController::class, 'getProductsBy
 Route::get('/products/filter', [ProductController::class, 'getProductsFiltered']);
 Route::post('/product/update', [ProductController::class, 'updateProduct']);
 Route::delete('/product/delete', [ProductController::class, 'deleteProduct']);
+Route::get('/product/by-id', [ProductController::class, 'getProductById']);
 
 Route::post('/cart/add', [CartController::class, 'addToCart']);
 Route::get('/cart/list', [CartController::class, 'getCartItems']);

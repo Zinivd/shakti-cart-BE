@@ -326,6 +326,10 @@ class ProductController extends Controller
 
         } catch (Exception $e) {
             Log::error("GetAllProducts Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -390,4 +394,54 @@ class ProductController extends Controller
             'data' => $products
         ]);
     }
+
+
+
+
+    // ---------------------------------------------------------
+// 🟦 GET PRODUCT BY ID
+// ---------------------------------------------------------
+    public function getProductById(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'product_id' => 'required|string|exists:products,product_id'
+            ]);
+
+            // Fetch product
+            $product = Product::where('product_id', $request->product_id)->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $product
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (Exception $e) {
+
+            Log::error("GetProductById Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch product',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
