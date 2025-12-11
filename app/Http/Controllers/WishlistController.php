@@ -43,6 +43,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Invalid or expired token'
             ], 401);
         }
@@ -93,6 +94,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to add product to wishlist'
             ], 500);
         }
@@ -125,6 +127,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch wishlist'
             ], 500);
         }
@@ -169,6 +172,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to remove item from wishlist'
             ], 500);
         }

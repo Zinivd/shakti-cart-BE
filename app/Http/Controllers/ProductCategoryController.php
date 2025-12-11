@@ -125,6 +125,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error creating category'
             ], 500);
         }
@@ -163,6 +164,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error updating category'
             ], 500);
         }
@@ -199,6 +201,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error deleting category'
             ], 500);
         }
@@ -242,6 +245,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error creating subcategories'
             ], 500);
         }
@@ -291,6 +295,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error updating subcategories'
             ], 500);
         }
@@ -324,6 +329,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error deleting subcategory'
             ], 500);
         }
@@ -351,6 +357,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch categories'
             ], 500);
         }
@@ -380,6 +387,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }
@@ -414,6 +422,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }

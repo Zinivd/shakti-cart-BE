@@ -44,6 +44,7 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Invalid or expired token'
             ], 401);
         }
@@ -91,6 +92,7 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to add product to cart'
             ], 500);
         }
@@ -123,6 +125,7 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch cart items'
             ], 500);
         }
@@ -167,6 +170,7 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to remove item from cart'
             ], 500);
         }

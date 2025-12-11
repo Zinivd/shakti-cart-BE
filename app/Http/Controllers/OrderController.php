@@ -45,6 +45,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Invalid or expired token'
             ], 401);
         }
@@ -132,6 +133,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to place order'
             ], 500);
         }
@@ -179,6 +181,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to update status'
             ], 500);
         }
@@ -209,6 +212,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to fetch orders'
             ], 500);
         }
@@ -238,6 +242,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch orders'
             ], 500);
         }
@@ -273,6 +278,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error fetching order'
             ], 500);
         }
@@ -298,6 +304,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Payment initiation failed'
             ], 500);
         }
@@ -338,6 +345,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Payment callback failed'
             ], 500);
         }

@@ -118,6 +118,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Login failed. Please try again later.'
             ], 500);
         }
@@ -153,6 +154,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Logout failed. Please try again later.'
             ], 500);
         }

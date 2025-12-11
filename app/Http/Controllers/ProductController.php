@@ -157,6 +157,7 @@ class ProductController extends Controller
             Log::error("Create Product Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error creating product'
             ], 500);
         }
@@ -304,6 +305,7 @@ class ProductController extends Controller
             Log::error("Delete Product Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Error deleting product'
             ], 500);
         }
@@ -328,6 +330,7 @@ class ProductController extends Controller
             Log::error("GetAllProducts Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
+                'message' => 'Error fetching products',
                 'error' => $e->getMessage()
             ]);
         }

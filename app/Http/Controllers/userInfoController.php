@@ -61,6 +61,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Token decryption failed'
             ], 401);
         }
@@ -115,6 +116,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch user info'
             ], 500);
         }
@@ -148,6 +150,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to update user info'
             ], 500);
         }
@@ -203,6 +206,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to delete user'
             ], 500);
         }
@@ -232,6 +236,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to fetch users'
             ], 500);
         }
@@ -279,6 +284,7 @@ class userInfoController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to fetch user'
             ], 500);
         }

@@ -54,6 +54,7 @@ class AddressController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Token verification failed'
             ], 401);
         }
@@ -109,6 +110,7 @@ class AddressController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to add address'
             ], 500);
         }
@@ -137,6 +139,7 @@ class AddressController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Could not fetch addresses'
             ], 500);
         }
@@ -188,6 +191,7 @@ class AddressController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to update address'
             ], 500);
         }
@@ -230,6 +234,7 @@ class AddressController extends Controller
 
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Failed to delete address'
             ], 500);
         }
@@ -295,6 +300,7 @@ class AddressController extends Controller
             \Log::error("GetAddressByUserId Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
+                'error'=>$e->getMessage(),
                 'message' => 'Unable to fetch address'
             ], 500);
         }
