@@ -241,10 +241,32 @@ class AddressController extends Controller
     }
 
     public function getAddressByUserId(Request $request)
-    {
+{
+    try {
+        $user_id = $request->query('user_id');
+        $token = $request->header('Authorization');
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authorization token missing'
+            ], 401);
+        }
+
+        $token = str_replace('Bearer ', '', $token);
+
+        // Decode the token
         try {
-            $user_id = $request->query('user_id');
-            $token = $request->header('Authorization');
+            $decoded = json_decode(Crypt::decryptString($token), true);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid or expired token'], 401);
+        }
+
+        $token_user_id = $decoded['unique_id'];
+        $token_user_type = $decoded['user_type'] ?? 'user'; // user_type may not be present
+
+        // If user is NOT admin, then user_id must match token user
+        if ($token_user_type !== 'admin') {
 
             if (!$user_id) {
                 return response()->json([
@@ -253,58 +275,56 @@ class AddressController extends Controller
                 ], 400);
             }
 
-            if (!$token) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Authorization token missing'
-                ], 401);
-            }
-
-            $token = str_replace('Bearer ', '', $token);
-
-            // Token decode
-            try {
-                $decoded = json_decode(Crypt::decryptString($token), true);
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Invalid or expired token'], 401);
-            }
-
-            // Token & user_id must match the same user
-            if ($decoded['unique_id'] !== $user_id) {
+            if ($token_user_id !== $user_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User ID mismatch with token user'
                 ], 403);
             }
+        }
 
-            // Find actual user record
-            $user = AuthUser::where('unique_id', $user_id)->first();
+        // If user is admin and no user_id provided → return ALL addresses
+        if ($token_user_type === 'admin' && !$user_id) {
 
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found'
-                ], 404);
-            }
-
-            // Fetch addresses
-            $addresses = UserAddress::where('auth_user_id', $user->id)->get();
+            $addresses = UserAddress::with('user') // optional: fetch user details
+                                    ->get();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Addresses fetched successfully',
+                'message' => 'All user addresses fetched successfully (Admin Access)',
                 'data' => $addresses
             ]);
+        }
 
-        } catch (Exception $e) {
-            \Log::error("GetAddressByUserId Error: " . $e->getMessage());
+        // Find requested user
+        $user = AuthUser::where('unique_id', $user_id)->first();
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
-                'message' => 'Unable to fetch address'
-            ], 500);
+                'message' => 'User not found'
+            ], 404);
         }
+
+        // Fetch specific user's addresses
+        $addresses = UserAddress::where('auth_user_id', $user->id)->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Addresses fetched successfully',
+            'data' => $addresses
+        ]);
+
+    } catch (Exception $e) {
+        \Log::error("GetAddressByUserId Error: " . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'message' => 'Unable to fetch address'
+        ], 500);
     }
+}
+
 
     
 
