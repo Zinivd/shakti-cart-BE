@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\userInfoController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\CartController;
@@ -59,3 +60,10 @@ Route::put('/order/update-status', [OrderController::class, 'updateOrderStatus']
 Route::get('/order/list', [OrderController::class, 'orderList']); // user
 Route::get('/orders', [OrderController::class, 'getUserOrders']);
 Route::get('/orders_byorderId', [OrderController::class, 'getOrderByOrderId']);
+
+
+Route::post('/product/review', [ProductReviewController::class, 'addOrUpdateReview']);
+Route::get('/product/review/{product_id}', [ProductReviewController::class, 'getMyReview']);
+Route::get('/product/reviews/{product_id}', [ProductReviewController::class, 'getAllReviewsByProduct']);
+Route::delete('/product/review/{product_id}', [ProductReviewController::class, 'deleteReview']);
+Route::post('/admin/product/review', [ProductReviewController::class, 'addReviewByAdmin']);

@@ -24,6 +24,7 @@ return new class extends Migration {
             $table->decimal('selling_price', 10, 2);
             $table->string('product_list_type')->nullable(); // e.g. "featured", "new", "sale"
             $table->json('images')->nullable(); // up to 5 image names
+            $table->json('product_specification')->nullable();
             $table->timestamps();
 
             $table->foreign('category_id')->references('category_id')->on('product_categories')->onDelete('cascade');

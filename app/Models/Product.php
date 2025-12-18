@@ -24,12 +24,14 @@ class Product extends Model
         'discount',
         'selling_price',
         'product_list_type',
+        'product_specification',
         'images'
     ];
 
     protected $casts = [
         'size_unit' => 'array',
-        'images' => 'array'
+        'images' => 'array',
+         'product_specification' => 'array',
     ];
 
     public function category()

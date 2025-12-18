@@ -113,7 +113,9 @@ class ProductController extends Controller
                 'discount' => 'nullable|numeric',
                 'selling_price' => 'required|numeric',
                 'product_list_type' => 'nullable|string',
-                'images.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+                'images' => 'nullable|array',
+                'images.*' => 'image|mimes:jpeg,jpg,png,webp|max:2048',
+                'product_specification' => 'nullable|string',
             ]);
 
             $category = ProductCategory::where('category_id', $request->category_id)->first();
@@ -144,6 +146,9 @@ class ProductController extends Controller
                 'discount' => $request->discount ?? 0,
                 'selling_price' => $request->selling_price,
                 'product_list_type' => $request->product_list_type,
+                'product_specification' => $request->product_specification
+    ? json_decode($request->product_specification, true)
+    : null,
                 'images' => $imageUrls,
             ]);
 
@@ -153,11 +158,18 @@ class ProductController extends Controller
                 'data' => $product
             ]);
 
+            if (!$request->hasFile('images')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No images received'
+                ], 400);
+            }
+
         } catch (Exception $e) {
             Log::error("Create Product Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error creating product'
             ], 500);
         }
@@ -188,6 +200,7 @@ class ProductController extends Controller
                 'discount' => 'nullable|numeric',
                 'selling_price' => 'nullable|numeric',
                 'product_list_type' => 'nullable|string',
+                'product_specification' => 'nullable|string',
                 'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048'
             ]);
 
@@ -240,6 +253,9 @@ class ProductController extends Controller
                 'discount' => $request->discount ?? $product->discount,
                 'selling_price' => $request->selling_price ?? $product->selling_price,
                 'product_list_type' => $request->product_list_type ?? $product->product_list_type,
+                'product_specification' => $request->product_specification
+    ? json_decode($request->product_specification, true)
+    : $product->product_specification,
                 'images' => $imageUrls,
             ]);
 
@@ -305,7 +321,7 @@ class ProductController extends Controller
             Log::error("Delete Product Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error deleting product'
             ], 500);
         }

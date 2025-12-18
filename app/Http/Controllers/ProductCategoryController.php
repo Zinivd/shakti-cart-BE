@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Storage;
 
 class ProductCategoryController extends Controller
 {
@@ -56,6 +57,11 @@ class ProductCategoryController extends Controller
             ]);
         }
     }
+
+
+
+
+
 
     // ---------------------------------------------------------
     // ADMIN VALIDATION
@@ -106,12 +112,26 @@ class ProductCategoryController extends Controller
 
         try {
             $request->validate([
-                'category_name' => 'required|string|max:255'
+                'category_name' => 'required|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             ]);
+
+            $imageUrl = null;
+
+            if ($request->hasFile('image')) {
+                $path = Storage::disk('s3')->putFile(
+                    'category',
+                    $request->file('image'),
+                    'public'
+                );
+
+                $imageUrl = env('AWS_URL') . '/' . $path;
+            }
 
             $category = ProductCategory::create([
                 'category_id' => $this->generateCategoryId(),
-                'category_name' => $request->category_name
+                'category_name' => $request->category_name,
+                'image' => $imageUrl, // ONE image
             ]);
 
             return response()->json([
@@ -125,11 +145,12 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error creating category'
             ], 500);
         }
     }
+
 
     // ---------------------------------------------------------
     // UPDATE CATEGORY
@@ -144,13 +165,27 @@ class ProductCategoryController extends Controller
         try {
             $request->validate([
                 'category_id' => 'required|string|exists:product_categories,category_id',
-                'category_name' => 'required|string|max:255'
+                'category_name' => 'required|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             ]);
 
             $category = ProductCategory::where('category_id', $request->category_id)->first();
 
+            $imageUrl = $category->image;
+
+            if ($request->hasFile('image')) {
+                $path = Storage::disk('s3')->putFile(
+                    'category',
+                    $request->file('image'),
+                    'public'
+                );
+
+                $imageUrl = env('AWS_URL') . '/' . $path;
+            }
+
             $category->update([
-                'category_name' => $request->category_name
+                'category_name' => $request->category_name,
+                'image' => $imageUrl,
             ]);
 
             return response()->json([
@@ -164,7 +199,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error updating category'
             ], 500);
         }
@@ -201,7 +236,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error deleting category'
             ], 500);
         }
@@ -245,7 +280,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error creating subcategories'
             ], 500);
         }
@@ -295,7 +330,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error updating subcategories'
             ], 500);
         }
@@ -329,7 +364,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Error deleting subcategory'
             ], 500);
         }
@@ -357,7 +392,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch categories'
             ], 500);
         }
@@ -387,7 +422,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }
@@ -422,7 +457,7 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error'=>$e->getMessage(),
+                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }
