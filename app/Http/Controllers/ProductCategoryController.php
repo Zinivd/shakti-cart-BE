@@ -137,7 +137,8 @@ class ProductCategoryController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Category created successfully',
-                'data' => $category
+                'data' => $category,
+                'env'=> env('AWS_URL')
             ]);
 
         } catch (Exception $e) {
