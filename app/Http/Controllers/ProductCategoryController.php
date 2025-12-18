@@ -181,7 +181,7 @@ class ProductCategoryController extends Controller
                     'public'
                 );
 
-                $imageUrl = env('AWS_URL') . '/' . $path;
+                $imageUrl = 'https://shakthi-cart-image.s3.ap-south-1.amazonaws.com' . '/' . $path;
             }
 
             $category->update([

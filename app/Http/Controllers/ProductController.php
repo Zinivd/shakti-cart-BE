@@ -126,7 +126,7 @@ class ProductController extends Controller
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
                     $path = Storage::disk('s3')->putFile('products', $image, 'public');
-                    $imageUrls[] = env('AWS_URL') . "/" . $path;
+                    $imageUrls[] = 'https://shakthi-cart-image.s3.ap-south-1.amazonaws.com' . "/" . $path;
                 }
             }
 
@@ -232,7 +232,7 @@ class ProductController extends Controller
 
                 foreach ($images as $image) {
                     $path = Storage::disk('s3')->putFile('products', $image, 'public');
-                    $imageUrls[] = env('AWS_URL') . "/" . $path;
+                    $imageUrls[] = 'https://shakthi-cart-image.s3.ap-south-1.amazonaws.com' . "/" . $path;
                 }
             }
 
@@ -305,7 +305,7 @@ class ProductController extends Controller
             // Optional: delete images from S3
             if (!empty($product->images)) {
                 foreach ($product->images as $img) {
-                    $path = str_replace(env('AWS_URL') . "/", "", $img);
+                    $path = str_replace('https://shakthi-cart-image.s3.ap-south-1.amazonaws.com' . "/", "", $img);
                     Storage::disk('s3')->delete($path);
                 }
             }
