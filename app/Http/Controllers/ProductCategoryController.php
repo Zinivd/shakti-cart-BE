@@ -138,7 +138,7 @@ class ProductCategoryController extends Controller
                 'success' => true,
                 'message' => 'Category created successfully',
                 'data' => $category,
-                'env'=> env('AWS_URL')
+                'env' => env('AWS_URL')
             ]);
 
         } catch (Exception $e) {
@@ -372,13 +372,8 @@ class ProductCategoryController extends Controller
     }
 
 
-    public function getAllCategories(Request $request)
+    public function getAllCategories()
     {
-        if ($user = $this->validateToken($request)) {
-            if ($user instanceof \Illuminate\Http\JsonResponse)
-                return $user;
-        }
-
         try {
             $categories = ProductCategory::with('subcategories')->get();
 
@@ -393,7 +388,6 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch categories'
             ], 500);
         }
@@ -402,13 +396,8 @@ class ProductCategoryController extends Controller
     // ---------------------------------------------------------
     // 📌 2) GET ALL SUBCATEGORIES
     // ---------------------------------------------------------
-    public function getAllSubCategories(Request $request)
+    public function getAllSubCategories()
     {
-        if ($user = $this->validateToken($request)) {
-            if ($user instanceof \Illuminate\Http\JsonResponse)
-                return $user;
-        }
-
         try {
             $subs = ProductSubCategory::all();
 
@@ -423,7 +412,6 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }
@@ -434,11 +422,6 @@ class ProductCategoryController extends Controller
     // ---------------------------------------------------------
     public function getSubCategoriesByCategory(Request $request)
     {
-        if ($user = $this->validateToken($request)) {
-            if ($user instanceof \Illuminate\Http\JsonResponse)
-                return $user;
-        }
-
         try {
             $request->validate([
                 'category_id' => 'required|string|exists:product_categories,category_id'
@@ -458,7 +441,6 @@ class ProductCategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
                 'message' => 'Unable to fetch subcategories'
             ], 500);
         }
