@@ -31,7 +31,7 @@ Route::post('/subcategory/create', [ProductCategoryController::class, 'createSub
 Route::get('/category/all', [ProductCategoryController::class, 'getAllCategories']);
 Route::get('/subcategories', [ProductCategoryController::class, 'getAllSubCategories']);
 Route::get('/subcategories/by-category', [ProductCategoryController::class, 'getSubCategoriesByCategory']);
-Route::put('/category/update', [ProductCategoryController::class, 'updateCategory']);
+Route::post('/category/update', [ProductCategoryController::class, 'updateCategory']);
 Route::delete('/category/delete', [ProductCategoryController::class, 'deleteCategory']);
 Route::put('/subcategories/update', [ProductCategoryController::class, 'updateSubCategory']);
 Route::delete('/subcategories/delete', [ProductCategoryController::class, 'deleteSubCategory']);

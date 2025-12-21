@@ -157,55 +157,83 @@ class ProductCategoryController extends Controller
     // UPDATE CATEGORY
     // ---------------------------------------------------------
     public function updateCategory(Request $request)
-    {
-        if ($admin = $this->validateAdmin($request)) {
-            if ($admin instanceof \Illuminate\Http\JsonResponse)
-                return $admin;
-        }
-
-        try {
-            $request->validate([
-                'category_id' => 'required|string|exists:product_categories,category_id',
-                'category_name' => 'required|string|max:255',
-                'image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
-            ]);
-
-            $category = ProductCategory::where('category_id', $request->category_id)->first();
-
-            $imageUrl = $category->image;
-
-            if ($request->hasFile('image')) {
-                $path = Storage::disk('s3')->putFile(
-                    'category',
-                    $request->file('image'),
-                    'public'
-                );
-
-                $imageUrl = 'https://shakthi-cart-image.s3.ap-south-1.amazonaws.com' . '/' . $path;
-            }
-
-            $category->update([
-                'category_name' => $request->category_name,
-                'image' => $imageUrl,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Category updated successfully',
-                'data' => $category
-            ]);
-
-        } catch (Exception $e) {
-            Log::error("Update Category Error: " . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-                'message' => 'Error updating category'
-            ], 500);
+{
+    // ✅ Admin validation
+    if ($admin = $this->validateAdmin($request)) {
+        if ($admin instanceof \Illuminate\Http\JsonResponse) {
+            return $admin;
         }
     }
 
+    try {
+
+        // 🔥 Force Laravel to read FormData correctly
+        $data = $request->all();
+
+        // 🧪 Debug once if needed
+        Log::info('Update Category FormData:', $data);
+
+        // ✅ Validation (FormData compatible)
+        $request->validate([
+            'category_id'   => 'required|string|exists:product_categories,category_id',
+            'category_name' => 'required|string|max:255',
+            'image'         => 'sometimes|nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+        ]);
+
+        // ✅ Fetch category
+        $category = ProductCategory::where('category_id', $request->category_id)->first();
+
+        if (!$category) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Category not found'
+            ], 404);
+        }
+
+        // ✅ Preserve old image
+        $imageUrl = $category->image;
+
+        // ✅ Upload new image if exists
+        if ($request->hasFile('image')) {
+
+            $path = Storage::disk('s3')->putFile(
+                'category',
+                $request->file('image'),
+                'public'
+            );
+
+            $imageUrl = 'https://shakthi-cart-image.s3.ap-south-1.amazonaws.com/' . $path;
+        }
+
+        // ✅ Update category
+        $category->update([
+            'category_name' => $request->category_name,
+            'image' => $imageUrl,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category updated successfully',
+            'data' => $category
+        ], 200);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->errors()
+        ], 422);
+
+    } catch (Exception $e) {
+
+        Log::error('Update Category Error: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating category'
+        ], 500);
+    }
+}
     // ---------------------------------------------------------
     // DELETE CATEGORY
     // ---------------------------------------------------------
