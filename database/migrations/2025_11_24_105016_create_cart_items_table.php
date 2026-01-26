@@ -15,6 +15,7 @@ return new class extends Migration
         $table->id();
         $table->string('user_id'); // from token
         $table->string('product_id');
+        $table->string('size');
         $table->integer('quantity')->default(1);
         $table->timestamps();
     });

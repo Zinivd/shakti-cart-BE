@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RazorpayController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -67,3 +68,13 @@ Route::get('/product/review/{product_id}', [ProductReviewController::class, 'get
 Route::get('/product/reviews/{product_id}', [ProductReviewController::class, 'getAllReviewsByProduct']);
 Route::delete('/product/review/{product_id}', [ProductReviewController::class, 'deleteReview']);
 Route::post('/admin/product/review', [ProductReviewController::class, 'addReviewByAdmin']);
+
+
+
+Route::post('/razorpay/create-order', [RazorpayController::class, 'createOrder']);
+Route::post('/razorpay/verify-payment', [RazorpayController::class, 'verifyPayment']);
+Route::post('/checkout', [RazorpayController::class, 'checkout']);
+Route::get('/invoice/{order_id}', [OrderController::class, 'getInvoice']);
+
+
+Route::post('/admin/product/quantity', [ProductController::class, 'updateProductQuantity']);

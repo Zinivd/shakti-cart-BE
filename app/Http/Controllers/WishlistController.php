@@ -57,6 +57,7 @@ class WishlistController extends Controller
         try {
             $request->validate([
                 'product_id' => 'required|exists:products,product_id',
+                'size' => 'required',
             ]);
 
             // User from token
@@ -81,7 +82,8 @@ class WishlistController extends Controller
             // Add to wishlist
             WishlistItem::create([
                 'user_id' => $userId,
-                'product_id' => $request->product_id
+                'product_id' => $request->product_id,
+                'size' => $request->size
             ]);
 
             return response()->json([

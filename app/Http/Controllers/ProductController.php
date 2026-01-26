@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProductQuantity;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -147,8 +149,8 @@ class ProductController extends Controller
                 'selling_price' => $request->selling_price,
                 'product_list_type' => $request->product_list_type,
                 'product_specification' => $request->product_specification
-    ? json_decode($request->product_specification, true)
-    : null,
+                    ? json_decode($request->product_specification, true)
+                    : null,
                 'images' => $imageUrls,
             ]);
 
@@ -254,8 +256,8 @@ class ProductController extends Controller
                 'selling_price' => $request->selling_price ?? $product->selling_price,
                 'product_list_type' => $request->product_list_type ?? $product->product_list_type,
                 'product_specification' => $request->product_specification
-    ? json_decode($request->product_specification, true)
-    : $product->product_specification,
+                    ? json_decode($request->product_specification, true)
+                    : $product->product_specification,
                 'images' => $imageUrls,
             ]);
 
@@ -458,6 +460,91 @@ class ProductController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch product',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    public function updateProductQuantity(Request $request)
+    {
+        // 🔐 Admin validation
+        $admin = $this->validateAdmin($request);
+        if ($admin instanceof \Illuminate\Http\JsonResponse) {
+            return $admin;
+        }
+
+        try {
+            // 1️⃣ Validate input
+            $request->validate([
+                'product_id' => 'required|exists:products,product_id',
+                'quantities' => 'required|array|min:1',
+                'quantities.*.size' => 'required|string',
+                'quantities.*.unit' => 'nullable|string',
+                'quantities.*.quantity' => 'required|integer|min:1'
+            ]);
+
+            $product = Product::where('product_id', $request->product_id)->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found'
+                ], 404);
+            }
+
+            $updatedQuantities = [];
+
+            // 2️⃣ ADD quantity (not overwrite)
+            foreach ($request->quantities as $qty) {
+
+                $productQuantity = ProductQuantity::where([
+                    'product_id' => $request->product_id,
+                    'size' => $qty['size']
+                ])->first();
+
+                if ($productQuantity) {
+                    // ✅ ADD stock
+                    $productQuantity->quantity += $qty['quantity'];
+                    $productQuantity->unit = $qty['unit'] ?? $productQuantity->unit;
+                    $productQuantity->save();
+                } else {
+                    // ✅ First-time entry
+                    $productQuantity = ProductQuantity::create([
+                        'product_id' => $request->product_id,
+                        'size' => $qty['size'],
+                        'unit' => $qty['unit'] ?? null,
+                        'quantity' => $qty['quantity']
+                    ]);
+                }
+
+                $updatedQuantities[] = [
+                    'size' => $productQuantity->size,
+                    'unit' => $productQuantity->unit,
+                    'quantity' => $productQuantity->quantity
+                ];
+            }
+
+            // 3️⃣ Sync total quantity ONCE
+            InventoryService::syncTotalQuantity($request->product_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product quantities added successfully',
+                'data' => [
+                    'product_id' => $request->product_id,
+                    'total_quantity' => $product->fresh()->total_quantity,
+                    'quantities' => $updatedQuantities
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("Update Product Quantity Error: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update product quantities',
                 'error' => $e->getMessage()
             ], 500);
         }

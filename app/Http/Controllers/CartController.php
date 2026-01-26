@@ -58,7 +58,8 @@ class CartController extends Controller
         try {
             $request->validate([
                 'product_id' => 'required|exists:products,product_id',
-                'quantity' => 'nullable|integer|min:1'
+                'quantity' => 'nullable|integer|min:1',
+                'size' => 'nullable|string'
             ]);
 
             $userId = $this->getUserFromToken($request);
@@ -78,6 +79,7 @@ class CartController extends Controller
                 CartItem::create([
                     'user_id' => $userId,
                     'product_id' => $request->product_id,
+                    'size' => $request->size,
                     'quantity' => $request->quantity ?? 1
                 ]);
             }

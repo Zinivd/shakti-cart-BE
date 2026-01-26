@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->string('color')->nullable();
             $table->json('size_unit')->nullable(); // e.g. [{ "size": "L", "unit": "piece" }]
+           $table->integer('total_quantity')->default(0);
             $table->decimal('actual_price', 10, 2);
             $table->decimal('discount', 5, 2)->default(0);
             $table->decimal('selling_price', 10, 2);

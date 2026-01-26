@@ -14,6 +14,7 @@ return new class extends Migration
     Schema::create('wishlist_items', function (Blueprint $table) {
         $table->id();
         $table->string('user_id'); // from token
+        $table->string(column: 'size');
         $table->string('product_id');
         $table->timestamps();
     });
